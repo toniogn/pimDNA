@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "pimDNA"
+version = "0.1.0"
+description = "Yoga online classes for everyone."
+authors = ["Antoine Gaston <antoine@epigenelabs.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.1"
+pydantic = "^1.10.7"
+datetime = "^5.1"
+sqlalchemy = "^2.0.12"
+requests = "^2.30.0"
+pyjwt = "^2.6.0"
+stripe = "^5.4.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+flake8 = "^6.0.0"
+isort = "^5.12.0"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
