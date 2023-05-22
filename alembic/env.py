@@ -18,15 +18,16 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from src.database.models import mapper_registry
-target_metadata = mapper_registry.metadata
+from src.database.models import *
+from src.database import mapper_registry
+target_metadata = [mapper_registry.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 from src.database import SQLALCHEMY_DATABASE_URI
-url = SQLALCHEMY_DATABASE_URI
+config.set_main_option('sqlalchemy.url', SQLALCHEMY_DATABASE_URI)
 
 
 def run_migrations_offline() -> None:
@@ -42,7 +43,7 @@ def run_migrations_offline() -> None:
 
     """
     context.configure(
-        url=url,
+        url=SQLALCHEMY_DATABASE_URI,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

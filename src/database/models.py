@@ -2,13 +2,11 @@ from datetime import datetime
 from typing import List
 
 from sqlalchemy import Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from . import Base
 
-mapper_registry = registry()
 
-
-@mapper_registry.mapped
-class User:
+class User(Base):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -19,8 +17,7 @@ class User:
     subscription: Mapped["Subscription"] = relationship(back_populates="users")
 
 
-@mapper_registry.mapped
-class Course:
+class Course(Base):
     __tablename__ = "course"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -30,8 +27,7 @@ class Course:
     subscriptions: Mapped[List["Subscription"]] = relationship(back_populates="courses")
 
 
-@mapper_registry.mapped
-class Subscription:
+class Subscription(Base):
     __tablename__ = "subscription"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
