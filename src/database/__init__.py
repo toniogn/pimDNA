@@ -13,4 +13,4 @@ make_db_session: Type[Session] = sessionmaker(
 mapper_registry = registry()
 Base = mapper_registry.generate_base()
 
-__all__ = ["make_db_session", "engine", Base]
+__all__ = ["make_db_session", "engine", "Base"]

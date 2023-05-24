@@ -1,3 +1,4 @@
+"""API module."""
 import stripe
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,3 +17,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 stripe.api_key = STRIPE_KEY
+
+__all__ = ["app"]
