@@ -1,24 +1,76 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Iterator, Optional
 
 import stripe
+from jose import jwt
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 
+from ..constants import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from ..database.models import Subscription as DBSubscription
+from ..database.models import User as DBUser
+from . import pwd_context
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 
 class User(BaseModel):
-    id: int
+    id: int | None
     name: str
-    create_date: datetime
+    create_date: datetime | None
     email: str
-    subscription: "Subscription"
+    disabled: bool = False
+    subscription: "Subscription" | None
+    hashed_password: str | None
 
     class Config:
         orm_mode = True
+
+    @classmethod
+    def authenticate(
+        cls, username: str, password: str, db_session: Session
+    ) -> "User" | None:
+        user = cls.from_name(username, db_session)
+        if pwd_context.verify(password, user.hashed_password):
+            return user
+
+    def get_token(
+        self, expires_delta: timedelta | None = ACCESS_TOKEN_EXPIRE_MINUTES
+    ) -> str:
+        return jwt.encode(
+            {"sub": self.name, "exp": datetime.utcnow() + expires_delta},
+            SECRET_KEY,
+            algorithm=ALGORITHM,
+        )
+
+    def to_db(self, password: str, db_session: Session) -> None:
+        try:
+            db_session.execute(
+                insert(DBUser).values(
+                    name=self.name,
+                    email=self.email,
+                    disabled=self.disabled,
+                    hashed_password=pwd_context.hash(password),
+                )
+            )
+        except IntegrityError:
+            raise ValueError("User name already exists")
+
+    @classmethod
+    def from_name(cls, username: str, db_session: Session) -> "User" | None:
+        try:
+            db_user = db_session.execute(
+                select(DBUser).where(DBUser.name == username)
+            ).scalar_one()
+        except NoResultFound:
+            return
+        return cls.from_orm(db_user)
 
 
 class Course(BaseModel):
@@ -75,7 +127,7 @@ class Subscription(BaseModel):
         db_session.execute(
             insert(DBSubscription)
             .values(name=self.name, monthly_price=self.monthly_price)
-            .on_conflict_do_nothing(index_elements=[Subscription.name])
+            .on_conflict_do_nothing(index_elements=[DBSubscription.name])
         )
 
     @classmethod

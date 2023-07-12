@@ -20,7 +20,7 @@ RUN buildDeps="build-essential" \
     && apt-get install --no-install-recommends -y \
         curl \
         vim \
-        netcat \
+        netcat-traditional \
     && apt-get install -y --no-install-recommends $buildDeps \
     && rm -rf /var/lib/apt/lists/*
 

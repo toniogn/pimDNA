@@ -3,6 +3,7 @@ from typing import List
 
 from sqlalchemy import Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from . import Base
 
 
@@ -10,11 +11,12 @@ class User(Base):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    auth0_id: Mapped[str]
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(String(128), unique=True)
     create_date: Mapped[datetime] = mapped_column(insert_default=func.now())
-    email: Mapped[str] = mapped_column(String(120), unique=True)
+    email: Mapped[str] = mapped_column(String(128), unique=True)
+    disabled: Mapped[bool]
     subscription: Mapped["Subscription"] = relationship(back_populates="users")
+    hashed_password: Mapped[str] = mapped_column(String(128))
 
 
 class Course(Base):

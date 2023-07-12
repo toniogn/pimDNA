@@ -2,7 +2,7 @@
 from typing import Type
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker, registry
+from sqlalchemy.orm import Session, registry, sessionmaker
 
 from ..constants import SQLALCHEMY_DATABASE_URI
 

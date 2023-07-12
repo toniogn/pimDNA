@@ -12,3 +12,9 @@ SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASS}@{DB_SERVICE}:{DB_PO
 
 CURRENCY = "euro"
 STRIPE_KEY = ""
+
+# to get a string like this run:
+# openssl rand -hex 32
+SECRET_KEY = "edb4665177b5c387009d8bde66bc107a818670914321e19227870759c34b4dee"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30

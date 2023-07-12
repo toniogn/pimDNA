@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -14,12 +13,14 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+from src.database import mapper_registry
+
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from src.database.models import *
-from src.database import mapper_registry
+
 target_metadata = [mapper_registry.metadata]
 
 # other values from the config, defined by the needs of env.py,
@@ -27,7 +28,8 @@ target_metadata = [mapper_registry.metadata]
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 from src.database import SQLALCHEMY_DATABASE_URI
-config.set_main_option('sqlalchemy.url', SQLALCHEMY_DATABASE_URI)
+
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URI)
 
 
 def run_migrations_offline() -> None:
@@ -67,9 +69,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

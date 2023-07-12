@@ -5,8 +5,9 @@ services:
     build:
       dockerfile: Dockerfile
       target: development
+      context: back
     volumes:
-      - ./src/:/app/src/
+      - /src/:/app/src/
     ports:
       - 8000:8000
     depends_on:
