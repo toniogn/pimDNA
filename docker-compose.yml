@@ -1,17 +1,34 @@
 version: '3.9'
 
 services:
-  server:
+  back:
     build:
       dockerfile: Dockerfile
       target: development
       context: back
     volumes:
-      - /src/:/app/src/
+      - /src/:/app/back/src/
     ports:
       - 8000:8000
+    networks:
+      - app
     depends_on:
       - db
+
+  front:
+    build:
+      dockerfile: Dockerfile
+      target: development
+      context: front
+    volumes:
+      - /src/:/app/front/src/
+      - node_modules:/app/front/node_modules/
+    ports:
+      - 3000:3000
+    networks:
+      - app
+    depends_on:
+      - back
 
   db:
     image: postgres:15-alpine
@@ -19,7 +36,15 @@ services:
       - db_data:/var/lib/postgresql/data/
     ports:
       - 5432:5432
+    networks:
+      - app
+    environment:
+      - POSTGRES_PASSWORD=password
+
+networks:
+  app:
+    driver: bridge
 
 volumes:
     db_data:
-      driver: local
+    node_modules:

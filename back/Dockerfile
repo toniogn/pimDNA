@@ -1,5 +1,5 @@
 # Creating a python base with shared environment variables
-FROM python:3.11-slim AS python-base
+FROM python:3.11-slim AS python
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=off \
@@ -13,8 +13,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
-# builder-base is used to build dependencies
-FROM python-base AS builder-base
+# builder is used to build dependencies
+FROM python AS builder
 RUN buildDeps="build-essential" \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
@@ -34,16 +34,16 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=${POETRY_HOME} pyt
 # and install only runtime deps using poetry
 WORKDIR $PYSETUP_PATH
 COPY ./poetry.lock ./pyproject.toml ./
-RUN poetry install --only main  # respects
+RUN poetry install --only main
 
 # 'development' stage installs all dev deps and can be used to develop code.
-# For example using docker-compose to mount local volume under /app
-FROM python-base as development
+# For example using docker-compose to mount local volume under /app/back
+FROM python as development
 ENV FASTAPI_ENV=development
 
 # Copying poetry and venv into image
-COPY --from=builder-base $POETRY_HOME $POETRY_HOME
-COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
+COPY --from=builder $POETRY_HOME $POETRY_HOME
+COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
 
 # Copying in our entrypoint
 # COPY docker-entrypoint.sh /docker-entrypoint.sh
@@ -53,7 +53,7 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR $PYSETUP_PATH
 RUN poetry install
 
-WORKDIR /app
+WORKDIR /app/back
 COPY . .
 
 EXPOSE 8000
@@ -74,24 +74,24 @@ CMD ["uvicorn", "--reload", "--host=0.0.0.0", "--port=8000", "src.api:app"]
 # RUN coverage run --rcfile ./pyproject.toml -m pytest ./tests
 # RUN coverage report --fail-under 95
 
-# 'production' stage uses the clean 'python-base' stage and copyies
-# in only our runtime deps that were installed in the 'builder-base'
-FROM python-base AS production
+# 'production' stage uses the clean 'python' stage and copyies
+# in only our runtime deps that were installed in the 'builder'
+FROM python AS production
 ENV FASTAPI_ENV=production
 
-COPY --from=builder-base $VENV_PATH $VENV_PATH
+COPY --from=builder $VENV_PATH $VENV_PATH
 COPY gunicorn_conf.py /gunicorn_conf.py
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# COPY docker-entrypoint.sh /docker-entrypoint.sh
+# RUN chmod +x /docker-entrypoint.sh
 
 # Create user with the name poetry
 RUN groupadd -g 1500 poetry && \
     useradd -m -u 1500 -g poetry poetry
 
-COPY --chown=poetry:poetry ./app /app
+COPY --chown=poetry:poetry ./app/back /app/back
 USER poetry
-WORKDIR /app
+WORKDIR /app/back
 
-ENTRYPOINT /docker-entrypoint.sh $0 $@
+# ENTRYPOINT /docker-entrypoint.sh $0 $@
 CMD [ "gunicorn", "--worker-class uvicorn.workers.UvicornWorker", "--config /gunicorn_conf.py", "src.api:app"]
