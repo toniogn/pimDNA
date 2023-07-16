@@ -6,7 +6,6 @@ import stripe
 from fastapi import Depends, FastAPI, Form, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from ..constants import ACCESS_TOKEN_EXPIRE_MINUTES, STRIPE_KEY
@@ -25,10 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 stripe.api_key = STRIPE_KEY
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-@app.post("/token", response_model=Token)
+@app.post("/login")
 async def login_for_access_token(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
     db_session: Annotated[Session, Depends(get_db_session)],

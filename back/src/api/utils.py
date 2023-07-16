@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional, ForwardRef
 
 import stripe
 from jose import jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from ..constants import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from ..database.models import Subscription as DBSubscription
 from ..database.models import User as DBUser
-from . import pwd_context
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class Token(BaseModel):
@@ -21,21 +23,19 @@ class Token(BaseModel):
 
 
 class User(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int | None
     name: str
     create_date: datetime | None
     email: str
     disabled: bool = False
-    subscription: "Subscription" | None
+    subscription: ForwardRef("Subscription") | None
     hashed_password: str | None
-
-    class Config:
-        orm_mode = True
 
     @classmethod
     def authenticate(
         cls, username: str, password: str, db_session: Session
-    ) -> "User" | None:
+    ) -> ForwardRef("User") | None:
         user = cls.from_name(username, db_session)
         if pwd_context.verify(password, user.hashed_password):
             return user
@@ -63,14 +63,14 @@ class User(BaseModel):
             raise ValueError("User name already exists")
 
     @classmethod
-    def from_name(cls, username: str, db_session: Session) -> "User" | None:
+    def from_name(cls, username: str, db_session: Session) -> ForwardRef("User") | None:
         try:
             db_user = db_session.execute(
                 select(DBUser).where(DBUser.name == username)
             ).scalar_one()
         except NoResultFound:
             return
-        return cls.from_orm(db_user)
+        return cls.model_validate(db_user)
 
 
 class Course(BaseModel):
@@ -80,23 +80,18 @@ class Course(BaseModel):
     create_date: datetime
     subscriptions: list["Subscription"]
 
-    class Config:
-        orm_mode = True
-
     def read(self) -> Iterator[bytes]:
         with open(self.file, mode="rb") as stream:
             yield from stream
 
 
 class Subscription(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: Optional[int]
     name: str
     monthly_price: int
     courses: list[Course]
     users: list[User]
-
-    class Config:
-        orm_mode = True
 
     @property
     def course_by_id(self) -> Dict[int, Course]:
@@ -108,7 +103,7 @@ class Subscription(BaseModel):
         if db_subscription := db_session.execute(
             select(DBSubscription).where(DBSubscription.name == product.name)
         ).first():
-            return cls.from_orm(db_subscription)
+            return cls.model_validate(db_subscription)
         else:
             return cls(
                 name=product.name,

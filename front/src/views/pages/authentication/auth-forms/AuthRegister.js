@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import {
+  // useEffect,
+  useState
+} from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+// import { useSelector } from 'react-redux';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -8,7 +11,7 @@ import {
   Box,
   Button,
   Checkbox,
-  Divider,
+  // Divider,
   FormControl,
   FormControlLabel,
   FormHelperText,
@@ -28,7 +31,7 @@ import { Formik } from 'formik';
 
 // project imports
 import useScriptRef from 'hooks/useScriptRef';
-import Google from 'assets/images/icons/social-google.svg';
+// import Google from 'assets/images/icons/social-google.svg';
 import AnimateButton from 'ui-component/extended/AnimateButton';
 import { strengthColor, strengthIndicator } from 'utils/password-strength';
 
@@ -42,16 +45,16 @@ const FirebaseRegister = ({ ...others }) => {
   const theme = useTheme();
   const scriptedRef = useScriptRef();
   const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
-  const customization = useSelector((state) => state.customization);
+  // const customization = useSelector((state) => state.customization);
   const [showPassword, setShowPassword] = useState(false);
   const [checked, setChecked] = useState(true);
 
   const [strength, setStrength] = useState(0);
   const [level, setLevel] = useState();
 
-  const googleHandler = async () => {
-    console.error('Register');
-  };
+  // const googleHandler = async () => {
+  //   console.error('Register');
+  // };
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -67,13 +70,13 @@ const FirebaseRegister = ({ ...others }) => {
     setLevel(strengthColor(temp));
   };
 
-  useEffect(() => {
-    changePassword('123456');
-  }, []);
+  // useEffect(() => {
+  //   changePassword('123456');
+  // }, []);
 
   return (
     <>
-      <Grid container direction="column" justifyContent="center" spacing={2}>
+      {/* <Grid container direction="column" justifyContent="center" spacing={2}>
         <Grid item xs={12}>
           <AnimateButton>
             <Button
@@ -122,7 +125,7 @@ const FirebaseRegister = ({ ...others }) => {
             <Typography variant="subtitle1">Sign up with Email address</Typography>
           </Box>
         </Grid>
-      </Grid>
+      </Grid> */}
 
       <Formik
         initialValues={{

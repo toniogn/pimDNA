@@ -10,14 +10,14 @@ from . import app
 from .utils import Course, Subscription, User
 
 
-@app.get("/courses", response_model=list[Course])
+@app.get("/courses")
 async def get_courses(
     current_user: Annotated[User, Depends(get_current_user)]
 ) -> list[Course]:
     return current_user.subscription.courses
 
 
-@app.get("/course/{course_id}", response_model=Course)
+@app.get("/course/{course_id}")
 async def get_course(
     course_id: int, current_user: Annotated[User, Depends(get_current_user)]
 ) -> Course:
@@ -27,7 +27,7 @@ async def get_course(
     return StreamingResponse(course.read(), media_type="video/mp4")
 
 
-@app.get("/plans", response_model=list[Subscription])
+@app.get("/plans")
 async def get_plans(
     db_session: Annotated[Session, Depends(get_db_session)]
 ) -> list[Subscription]:

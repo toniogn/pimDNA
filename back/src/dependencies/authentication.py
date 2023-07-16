@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..api.utils import User
 from ..constants import ALGORITHM, SECRET_KEY
 from ..exceptions import credentials_exception
-from . import get_db_session
+from .database import get_db_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
