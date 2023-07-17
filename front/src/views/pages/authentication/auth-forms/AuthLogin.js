@@ -1,9 +1,8 @@
 import { useState } from 'react';
 // import { useSelector } from 'react-redux';
-import axios from 'axios'
+import axios from 'axios';
 
 // material-ui
-import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Button,
@@ -21,10 +20,11 @@ import {
   // useMediaQuery,
   Typography
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 // third party
-import * as Yup from 'yup';
 import { Formik } from 'formik';
+import * as Yup from 'yup';
 
 // project imports
 import useScriptRef from 'hooks/useScriptRef';
@@ -121,30 +121,34 @@ const FirebaseLogin = ({ ...others }) => {
 
       <Formik
         initialValues={{
-          email: '', //'info@codedthemes.com',
+          username: '', //'info@codedthemes.com',
           password: '', //'123456',
           submit: null
         }}
         validationSchema={Yup.object().shape({
-          email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
+          username: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
           password: Yup.string().max(255).required('Password is required')
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
-          axios.post('http://localhost:8000/login',
-            {"email": values.email, "password": values.password}
-          )
-            .then(response => {
-              console.log(response)
+          axios
+            .post('http://localhost:8000/login', values, {
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            })
+            .then((response) => {
+              console.log(response);
               if (scriptedRef.current) {
                 setStatus({ success: true });
                 setSubmitting(false);
               }
             })
-            .catch(error => {
+            .catch((error) => {
               console.error(error);
               if (scriptedRef.current) {
                 setStatus({ success: false });
-                setErrors({ submit: err.message });
+                setErrors({ submit: error.message });
                 setSubmitting(false);
               }
             });
@@ -152,21 +156,21 @@ const FirebaseLogin = ({ ...others }) => {
       >
         {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
           <form noValidate onSubmit={handleSubmit} {...others}>
-            <FormControl fullWidth error={Boolean(touched.email && errors.email)} sx={{ ...theme.typography.customInput }}>
-              <InputLabel htmlFor="outlined-adornment-email-login">Email Address / Username</InputLabel>
+            <FormControl fullWidth error={Boolean(touched.username && errors.username)} sx={{ ...theme.typography.customInput }}>
+              <InputLabel htmlFor="outlined-adornment-email-login">Email Address</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-email-login"
                 type="email"
-                value={values.email}
-                name="email"
+                value={values.username}
+                name="username"
                 onBlur={handleBlur}
                 onChange={handleChange}
-                label="Email Address / Username"
+                label="Email Address"
                 inputProps={{}}
               />
-              {touched.email && errors.email && (
+              {touched.username && errors.username && (
                 <FormHelperText error id="standard-weight-helper-text-email-login">
-                  {errors.email}
+                  {errors.username}
                 </FormHelperText>
               )}
             </FormControl>

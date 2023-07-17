@@ -7,7 +7,7 @@ services:
       target: development
       context: back
     volumes:
-      - /src/:/app/back/src/
+      - ./back/src:/app/back/src
     ports:
       - 8000:8000
     networks:
@@ -16,13 +16,16 @@ services:
       - db
 
   front:
+    command: yarn start
     build:
       dockerfile: Dockerfile
-      target: development
+      target: builder
       context: front
+    environment:
+      - WATCHPACK_POLLING=true
     volumes:
-      - /src/:/app/front/src/
-      - node_modules:/app/front/node_modules/
+      - ./front/src:/app/front/src
+      - node_modules:/app/front/node_modules
     ports:
       - 3000:3000
     networks:
@@ -33,17 +36,18 @@ services:
   db:
     image: postgres:15-alpine
     volumes:
-      - db_data:/var/lib/postgresql/data/
+      - db_data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     networks:
       - app
     environment:
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
 
 networks:
   app:
-    driver: bridge
 
 volumes:
     db_data:
