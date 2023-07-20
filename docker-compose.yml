@@ -2,27 +2,31 @@ version: '3.9'
 
 services:
   back:
+    container_name: back
+    restart: always
     build:
       dockerfile: Dockerfile
       target: development
       context: back
     volumes:
       - ./back/src:/app/back/src
+      - ./back/alembic:/app/back/alembic
     ports:
       - 8000:8000
     networks:
       - app
+    env_file:
+      - ./back/.env
     depends_on:
-      - db
+      - database
 
   front:
+    container_name: front
     command: yarn start
     build:
       dockerfile: Dockerfile
       target: builder
       context: front
-    environment:
-      - WATCHPACK_POLLING=true
     volumes:
       - ./front/src:/app/front/src
       - node_modules:/app/front/node_modules
@@ -30,21 +34,23 @@ services:
       - 3000:3000
     networks:
       - app
+    env_file:
+      - ./front/.env
     depends_on:
       - back
 
-  db:
+  database:
+    container_name: database
     image: postgres:15-alpine
+    restart: always
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     networks:
       - app
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=postgres
+    env_file:
+      - ./back/.env
 
 networks:
   app:

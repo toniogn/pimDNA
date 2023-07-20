@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from ..api.utils import User
+from ..api.utils import Customer
 from ..constants import ALGORITHM, SECRET_KEY
 from ..exceptions import credentials_exception
 from .database import get_db_session
@@ -14,10 +14,10 @@ from .database import get_db_session
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-async def get_current_user(
+async def get_current_customer(
     token: Annotated[str, Depends(oauth2_scheme)],
     db_session: Annotated[Session, Depends(get_db_session)],
-) -> User:
+) -> Customer:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -25,9 +25,9 @@ async def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = User.from_name(username, db_session)
-    if user is None:
+    customer = Customer.from_email(username, db_session)
+    if customer is None:
         raise credentials_exception
-    if user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return user
+    if customer.disabled:
+        raise HTTPException(status_code=400, detail="Inactive customer")
+    return customer

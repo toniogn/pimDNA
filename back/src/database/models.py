@@ -1,22 +1,34 @@
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import Integer, String, func
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from . import Base
+from . import Base, mapper_registry
 
 
-class User(Base):
-    __tablename__ = "user"
+class Customer(Base):
+    __tablename__ = "customer"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(128), unique=True)
     create_date: Mapped[datetime] = mapped_column(insert_default=func.now())
     email: Mapped[str] = mapped_column(String(128), unique=True)
     disabled: Mapped[bool]
-    subscription: Mapped["Subscription"] = relationship(back_populates="users")
+    subscription_id: Mapped[int] = mapped_column(
+        ForeignKey("subscription.id"), nullable=True
+    )
+    subscription: Mapped["Subscription"] = relationship(
+        back_populates="customers"
+    )
     hashed_password: Mapped[str] = mapped_column(String(128))
+
+
+subscription_course = Table(
+    "subscription_course",
+    mapper_registry.metadata,
+    Column("subscription_id", ForeignKey("subscription.id"), primary_key=True),
+    Column("course_id", ForeignKey("course.id"), primary_key=True),
+)
 
 
 class Course(Base):
@@ -26,7 +38,9 @@ class Course(Base):
     name: Mapped[str]
     file: Mapped[str]
     create_date: Mapped[datetime] = mapped_column(insert_default=func.now())
-    subscriptions: Mapped[List["Subscription"]] = relationship(back_populates="courses")
+    subscriptions: Mapped[List["Subscription"]] = relationship(
+        secondary=subscription_course, back_populates="courses"
+    )
 
 
 class Subscription(Base):
@@ -35,5 +49,9 @@ class Subscription(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(120), unique=True)
     monthly_price: Mapped[int]
-    courses: Mapped[List["Course"]] = relationship(back_populates="subscriptions")
-    users: Mapped[List["User"]] = relationship(back_populates="subscription")
+    courses: Mapped[List["Course"]] = relationship(
+        secondary=subscription_course, back_populates="subscriptions"
+    )
+    customers: Mapped[List["Customer"]] = relationship(
+        back_populates="subscription"
+    )

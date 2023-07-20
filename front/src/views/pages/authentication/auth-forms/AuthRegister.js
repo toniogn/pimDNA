@@ -1,12 +1,11 @@
+import axios from 'axios';
 import {
-  // useEffect,
   useState
 } from 'react';
 import { Link } from 'react-router-dom';
 // import { useSelector } from 'react-redux';
 
 // material-ui
-import { useTheme } from '@mui/material/styles';
 import {
   Box,
   Button,
@@ -20,14 +19,13 @@ import {
   InputAdornment,
   InputLabel,
   OutlinedInput,
-  TextField,
-  Typography,
-  useMediaQuery
+  Typography
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 // third party
-import * as Yup from 'yup';
 import { Formik } from 'formik';
+import * as Yup from 'yup';
 
 // project imports
 import useScriptRef from 'hooks/useScriptRef';
@@ -44,7 +42,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 const FirebaseRegister = ({ ...others }) => {
   const theme = useTheme();
   const scriptedRef = useScriptRef();
-  const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
+  // const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
   // const customization = useSelector((state) => state.customization);
   const [showPassword, setShowPassword] = useState(false);
   const [checked, setChecked] = useState(true);
@@ -129,6 +127,7 @@ const FirebaseRegister = ({ ...others }) => {
 
       <Formik
         initialValues={{
+          username: '',
           email: '',
           password: '',
           submit: null
@@ -138,24 +137,33 @@ const FirebaseRegister = ({ ...others }) => {
           password: Yup.string().max(255).required('Password is required')
         })}
         onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
-          try {
-            if (scriptedRef.current) {
-              setStatus({ success: true });
-              setSubmitting(false);
-            }
-          } catch (err) {
-            console.error(err);
-            if (scriptedRef.current) {
-              setStatus({ success: false });
-              setErrors({ submit: err.message });
-              setSubmitting(false);
-            }
-          }
+          axios
+            .post('http://localhost:8000/signup', values, {
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            })
+            .then((response) => {
+              console.log(response);
+              if (scriptedRef.current) {
+                setStatus({ success: true });
+                setSubmitting(false);
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+              if (scriptedRef.current) {
+                setStatus({ success: false });
+                setErrors({ submit: error.message });
+                setSubmitting(false);
+              }
+            });
         }}
       >
         {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
           <form noValidate onSubmit={handleSubmit} {...others}>
-            <Grid container spacing={matchDownSM ? 0 : 2}>
+            {/* <Grid container spacing={matchDownSM ? 0 : 2}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -178,9 +186,9 @@ const FirebaseRegister = ({ ...others }) => {
                   sx={{ ...theme.typography.customInput }}
                 />
               </Grid>
-            </Grid>
+            </Grid> */}
             <FormControl fullWidth error={Boolean(touched.email && errors.email)} sx={{ ...theme.typography.customInput }}>
-              <InputLabel htmlFor="outlined-adornment-email-register">Email Address / Username</InputLabel>
+              <InputLabel htmlFor="outlined-adornment-email-register">Email Address</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-email-register"
                 type="email"

@@ -1,5 +1,6 @@
+from __future__ import annotations
 from datetime import datetime, timedelta
-from typing import Dict, Iterator, Optional, ForwardRef
+from typing import Dict, Iterator, Optional
 
 import stripe
 from jose import jwt
@@ -9,9 +10,9 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 
-from ..constants import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
+from ..constants import ACCESS_TOKEN_EXPIRATION, ALGORITHM, SECRET_KEY
 from ..database.models import Subscription as DBSubscription
-from ..database.models import User as DBUser
+from ..database.models import Customer as DBCustomer
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,55 +23,53 @@ class Token(BaseModel):
     token_type: str
 
 
-class User(BaseModel):
+class Customer(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int | None
-    name: str
-    create_date: datetime | None
+    id: int | None = None
+    create_date: datetime | None = None
     email: str
     disabled: bool = False
-    subscription: ForwardRef("Subscription") | None
-    hashed_password: str | None
+    subscription: Subscription | None = None
+    hashed_password: str | None = None
 
     @classmethod
     def authenticate(
         cls, username: str, password: str, db_session: Session
-    ) -> ForwardRef("User") | None:
-        user = cls.from_name(username, db_session)
-        if pwd_context.verify(password, user.hashed_password):
-            return user
+    ) -> Customer | None:
+        customer = cls.from_email(username, db_session)
+        if pwd_context.verify(password, customer.hashed_password):
+            return customer
 
     def get_token(
-        self, expires_delta: timedelta | None = ACCESS_TOKEN_EXPIRE_MINUTES
+        self, expires_delta: timedelta | None = ACCESS_TOKEN_EXPIRATION
     ) -> str:
         return jwt.encode(
-            {"sub": self.name, "exp": datetime.utcnow() + expires_delta},
+            {"sub": self.email, "exp": datetime.utcnow() + expires_delta},
             SECRET_KEY,
             algorithm=ALGORITHM,
         )
 
     def to_db(self, password: str, db_session: Session) -> None:
-        try:
-            db_session.execute(
-                insert(DBUser).values(
-                    name=self.name,
-                    email=self.email,
-                    disabled=self.disabled,
-                    hashed_password=pwd_context.hash(password),
-                )
+        db_session.execute(
+            insert(DBCustomer)
+            .values(
+                email=self.email,
+                disabled=self.disabled,
+                hashed_password=pwd_context.hash(password),
             )
-        except IntegrityError:
-            raise ValueError("User name already exists")
+            .on_conflict_do_nothing()
+        )
+        db_session.commit()
 
     @classmethod
-    def from_name(cls, username: str, db_session: Session) -> ForwardRef("User") | None:
+    def from_email(cls, email: str, db_session: Session) -> Customer | None:
         try:
-            db_user = db_session.execute(
-                select(DBUser).where(DBUser.name == username)
+            db_customer = db_session.execute(
+                select(DBCustomer).where(DBCustomer.email == email)
             ).scalar_one()
         except NoResultFound:
             return
-        return cls.model_validate(db_user)
+        return cls.model_validate(db_customer)
 
 
 class Course(BaseModel):
@@ -91,14 +90,16 @@ class Subscription(BaseModel):
     name: str
     monthly_price: int
     courses: list[Course]
-    users: list[User]
+    customers: list[Customer]
 
     @property
     def course_by_id(self) -> Dict[int, Course]:
         return {course.id: course for course in self.courses}
 
     @classmethod
-    def from_price(cls, price: stripe.Price, db_session: Session) -> "Subscription":
+    def from_price(
+        cls, price: stripe.Price, db_session: Session
+    ) -> Subscription:
         product = stripe.Product.retrieve(price.product)
         if db_subscription := db_session.execute(
             select(DBSubscription).where(DBSubscription.name == product.name)
@@ -109,13 +110,13 @@ class Subscription(BaseModel):
                 name=product.name,
                 monthly_price=price.unit_amount / 100,
                 courses=[],
-                users=[],
+                customers=[],
             )
 
     @classmethod
     def from_prices(
         cls, prices: list[stripe.Price], db_session: Session
-    ) -> list["Subscription"]:
+    ) -> list[Subscription]:
         return [cls.from_price(price, db_session) for price in prices]
 
     def to_db(self, db_session: Session) -> None:
@@ -126,6 +127,8 @@ class Subscription(BaseModel):
         )
 
     @classmethod
-    def to_dbs(cls, subscriptions: list["Subscription"], db_session: Session) -> None:
+    def to_dbs(
+        cls, subscriptions: list["Subscription"], db_session: Session
+    ) -> None:
         for subscription in subscriptions:
             subscription.to_db(db_session)
