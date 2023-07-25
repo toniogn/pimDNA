@@ -4,7 +4,7 @@ from typing import Annotated
 from ..logger import Logger
 
 import stripe
-from fastapi import Depends, FastAPI, Form, HTTPException, status
+from fastapi import Depends, FastAPI, Form, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from ..constants import ACCESS_TOKEN_EXPIRATION, STRIPE_KEY
 from ..dependencies import get_db_session
 from .utils import Token, Customer
+
+from .private import router as private_router
+from .public import router as public_router
 
 logger = Logger(__file__)
 app = FastAPI()
@@ -26,6 +29,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 stripe.api_key = STRIPE_KEY
+app.include_router(public_router)
+app.include_router(private_router)
+
+
+@app.get("/")
+async def home() -> None:
+    pass
 
 
 @app.post("/login")
@@ -63,7 +73,13 @@ async def signup(
         )
         logger.exception(exception)
         raise exception
-    Customer(email=email).to_db(password, db_session)
+    if customer := stripe.Customer.search(
+        query=f"email:'{email}'",
+    )["data"]:
+        stripe_id = customer[0].stripe_id
+    else:
+        stripe_id = stripe.Customer.create(email=email).stripe_id
+    Customer(email=email, stripe_id=stripe_id).to_db(password, db_session)
 
 
 __all__ = ["app"]

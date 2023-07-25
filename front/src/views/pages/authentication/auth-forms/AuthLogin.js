@@ -36,9 +36,9 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 // import Google from 'assets/images/icons/social-google.svg';
 
-// ============================|| FIREBASE - LOGIN ||============================ //
+// ============================|| JWT - LOGIN ||============================ //
 
-const FirebaseLogin = ({ ...others }) => {
+const JWTLogin = ({ ...others }) => {
   const theme = useTheme();
   const scriptedRef = useScriptRef();
   // const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
@@ -237,4 +237,4 @@ const FirebaseLogin = ({ ...others }) => {
   );
 };
 
-export default FirebaseLogin;
+export default JWTLogin;

@@ -13,8 +13,7 @@ POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
 POSTGRES_SSL = os.getenv("POSTGRES_SSL", "disable")
 SQLALCHEMY_DATABASE_URI = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}?sslmode={POSTGRES_SSL}"
 
-CURRENCY = "euro"
-STRIPE_KEY = ""
+STRIPE_KEY = "sk_test_51N5bv0EYrBINAkWSRGUu1aUCwMdm7OeA88B264CvTQVlW398hFwVS42JlxVkfATN4FuDdIAdvb1t1NzL7AeEAljm00Z4VUkEaZ"
 
 # to get a string like this run:
 # openssl rand -hex 32

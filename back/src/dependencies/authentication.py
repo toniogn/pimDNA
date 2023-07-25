@@ -11,13 +11,10 @@ from ..constants import ALGORITHM, SECRET_KEY
 from ..exceptions import credentials_exception
 from .database import get_db_session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-async def get_current_customer(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    db_session: Annotated[Session, Depends(get_db_session)],
-) -> Customer:
+async def validate_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -25,6 +22,14 @@ async def get_current_customer(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+    return username
+
+
+async def get_current_customer(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> Customer:
+    username = await validate_token(token)
     customer = Customer.from_email(username, db_session)
     if customer is None:
         raise credentials_exception
